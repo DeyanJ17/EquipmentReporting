@@ -28,7 +28,7 @@ jobs:
     - name: Run Tests
       env:
           AWS_STORAGE_BUCKET_NAME: ci-test-reportingsite
-          AWS_ACCESS_KEY_ID: AKIA2UC3AQPZY47W2HOD
-          AWS_SECRET_ACCESS_KEY: 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
+          AWS_ACCESS_KEY_ID: 
+          AWS_SECRET_ACCESS_KEY: 
       run: |
         python manage.py test
