@@ -1,0 +1,152 @@
+{% extends 'components/base.html' %}
+
+{% block content %}
+    <div id="adminFlag" data-is-site-admin="{{ user.is_site_admin|yesno:'true,false' }}"></div>
+
+    <script>
+    var isSiteAdmin = document.querySelector('#adminFlag').dataset.isSiteAdmin === 'true';
+
+    function viewReportDetails(element, reportID, reportStatus) {
+        const detailsDiv = document.getElementById(`report-details-${reportID}`);
+        detailsDiv.classList.toggle('d-none');
+
+        // Use AJAX so page doesn't refresh when admin clicks view
+        if (reportStatus === "1" && isSiteAdmin) {
+            fetch(`/mark-in-progress/${element.getAttribute('data-report-id')}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({'report_status': '2'})
+            })
+                .then(response => response.json())
+        }
+    }
+
+    function onFileClick(element) {
+        let eId = element.id;
+        let embedViewId = `view-${eId}`;
+
+        const embedView = document.getElementById(embedViewId);
+        const embedDisabled = embedView.disabled ?? true;
+
+        if (embedDisabled) {
+            element.innerText = "Close";
+            element.classList.remove("btn-info");
+            element.classList.add("btn-danger");
+
+            embedView.classList.remove("d-none");
+            embedView.disabled = false;
+        } else {
+            element.innerText = `View ${eId}`;
+            element.classList.remove("btn-danger");
+            element.classList.add("btn-info");
+
+            embedView.classList.add("d-none")
+            embedView.disabled = true;
+        }
+    }
+
+    </script>
+
+<body style="background-color:#fefefe">
+    <div class="container mt-5">
+        <div class="mb-4">
+            <h2 class="d-flex justify-content-between align-items-center">
+                {% if user.is_site_admin %}
+                    All Submitted Reports
+                {% else %}
+                    Reports submitted by {{ user.username }}
+                {% endif %}
+                <form action="{% url 'Sort' %}" method="post" name="sort_reports">
+                    {% csrf_token %}
+                    <select name="Order" class="btn btn-primary" onchange="this.form.submit();">
+                        <option value="OldestFirst" {% if order == "OldestFirst" %}selected{% endif %}>Sort by Oldest</option>
+                        <option value="NewestFirst" {% if order == "NewestFirst" %}selected{% endif %}>Sort by Newest</option>
+                        <option value="ByStatus" {% if order == "ByStatus" %}selected{% endif %}>Sort by Status</option>
+                    </select>
+                </form>
+            </h2>
+        </div>
+    </div>
+
+        {% if reports.exists %}
+            {% for report in reports %}
+                <div class="card mb-4">
+                    <div class="card-body" style="background: #ebeaea80">
+                    <h5 class="card-title">Report #{{ report.id }} - Status: {{ report.get_report_status_display }}</h5>
+                    <button onClick="viewReportDetails(this, '{{ report.id }}', '{{ report.report_status }}')" class="btn btn-success mt-2" data-report-id="{{ report.id }}">View Details</button>
+                    <div id="report-details-{{ report.id }}" class="report-details d-none align-center mt-3" style="position: relative; padding-bottom: 50px;"> 
+                        <div><strong>User:</strong> {{ report.user.username }}</div>
+                        <div><strong>Time:</strong> {{ report.reportTime }}</div>
+                        <div><strong>Location:</strong> {{ report.location }}</div>
+                        <div><strong>Issue:</strong> {{ report.get_common_issue_display }}</div>
+                        <div><strong>Description:</strong> {{ report.description }}</div>
+                        <div><strong>Equipment Status:</strong> {{ report.get_e_status_display }}</div>
+                        <div class="pt-2"><strong>Admin Comment</strong></div>
+                        <div style="border: 1px solid #000; padding: 5px; margin-top: 5px; background-color: #f8f8f8;">{{ report.admin_comment }}</div>
+
+                        {% if report.submittedfiles_set.exists %}
+                            <div class="pt-2"><strong>Attached Files:</strong></div>
+                            {% for file in report.submittedfiles_set.all %}
+                                <div class="pt-2 pb-2 mb-4 d-flex flex-column">
+                                    <button onclick="onFileClick(this)" class="btn btn-info view-btn" id="{{ file.file.name }}">View {{ file.file.name }}</button>
+                                    <embed class="w-100 d-none mt-4" style="height: 32rem" id="view-{{ file.file.name }}" src="{{ file.file.url }}">
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="my-2 mb-4 d-flex">No files attached.</div>
+                        {% endif %}
+
+                        {% if user.is_site_admin %}
+
+                            <div class="mb-3">
+                                <form action="{% url 'Submit Admin Comment' report.id %}" method="post" name="report_form">
+                                {% csrf_token %}
+                                    <label for="admin_comment" class="mb-1">Admin Comment</label>
+                                    <div class="input-group mb-3">
+                                        <input id="admin_comment" type="text" name="admin_comment" class="form-control" style="resize: none;" value="{{ current_description }}">
+                                        <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="submit">Submit</button>
+                                      </div>
+                                    </div>
+
+                                </form>
+                            </div>
+
+                            <div>
+                                <form action="{% url 'Mark Addressed' report.id %}" method="post" class="row g-3 justify-content-center" name="report_form">
+                                {% csrf_token %}
+                                    <div class="mb-4 d-flex">
+                                        <button type="submit" class="btn btn-primary btn-submit">Mark Addressed</button>
+                                    </div>
+                                </form>
+                            </div>
+                        {% endif %}
+
+                        <div class="pt-2" style="position: absolute; bottom: 20px; left: 10px;">
+                            <form action="{% url 'Delete' report.id %}" method="post" class="row g-3" name="report_form" onsubmit="return confirmDelete();">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-submit">Delete Report</button>
+                            </form>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No reports submitted.</p>
+        {% endif %}
+
+        <a class="btn btn-primary" href="{% url 'Home' %}">Back to Home</a>
+        </div>
+    </div>
+</body>
+
+<script>
+    function confirmDelete() {
+        return confirm('Do you want to delete this report?');
+    }
+</script>
+{% endblock %}

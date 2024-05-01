@@ -1,0 +1,120 @@
+{% extends 'components/base.html' %}
+
+{% block content %}
+<body style="background-color:#fefefe">
+    <div class="container">
+    <div class="card mt-5">
+    <div class="card-body">
+        <h4 class="card-title mb-2">Report</h4>
+        <h6 class="card-subtitle mb-2 text-muted">Submitting as <span class="fw-bold">{% if user.is_authenticated %}{{ user.username }}{% else %}Anonymous{% endif %}</span></h6>
+
+        <form action="{% url 'Submit' %}" method="post" class="row g-3" enctype="multipart/form-data"
+            name="report_form">
+           {% csrf_token %}
+
+           <div class="mb-2">
+               <label class="mb-1" for="location">Which building is your issue in?</label>
+                <select class="form-select" id="location" name="location">
+                    <option value="AQC">Aquatic and Fitness Center</option>
+                    <option value="AST">Astronomy Building</option>
+                    <option value="BRN">Bryan Hall</option>
+                    <option value="CAB">New Cabell Hall</option>
+                    <option value="COC">Cocke Hall</option>
+                    <option value="CHM">Chemistry Building</option>
+                    <option value="CLK">Clark Hall</option>
+                    <option value="CLM">Clemons Library</option>
+                    <option value="GIL">Gilmer Hall</option>
+                    <option value="MCL">McLeod Hall</option>
+                    <option value="MEC">Mechanical Engineering Building</option>
+                    <option value="MIN">Minor Hall</option>
+                    <option value="MON">Monroe Hall</option>
+                    <option value="NAU">Nau Hall</option>
+                    <option value="NHL">Newcomb Hall</option>
+                    <option value="OLS">Olsson Hall</option>
+                    <option value="RICE">Rice Hall</option>
+                    <option value="RTN">Rotunda</option>
+                    <option value="SHA">Shannon Library</option>
+                    <option value="THN">Thornton Hall</option>
+                    <option value="Other">Other</option>
+                </select>
+           </div>
+           <div class="mb-2" id="custom_location" style="display:none;">
+               <label class="mb-1" for="custom_location">Please enter the building name: </label>
+               <input class="form-control" type="text" name="custom_location">
+           </div>
+           <div class="mb-2">
+               <label class="mb-1" for="common_issue">If you have a common issue, please select it below. Otherwise, select "N/A".</label>
+               <select class="form-select" id="common_issue" name="common_issue">
+                   <option value="NotCommon">N/A</option>
+                   <option value="Filter">Water Fountain Filter</option>
+                   <option value="Printer">Printer</option>
+                   <option value="BathroomClogged">Clogging in Bathroom</option>
+                   <option value="BathroomSupply">Bathroom Supply</option>
+                   <option value="ClassEquipment">Classroom Equipment</option>
+               </select>
+           </div>
+
+            <div class="mb-2">
+                <label class="mb-1" for="description">Describe your issue. Please include a floor or room number for this problem.</label>
+                <textarea class="form-control" id="description" type="text" name="description" rows="4" cols="50" style="resize: none;" required
+                          value="{{ current_description }}"></textarea>
+            </div>
+
+           <div class="mb-2">
+               <label class="mb-1" for="e_status">What is your issue status?</label>
+               <select class="form-select" id="e_status" name="e_status">
+                   <option value="Functioning">Functioning</option>
+                   <option value="Problematic">Problematic</option>
+                   <option value="Unusable">Unusable</option>
+               </select>
+           </div>
+           <div class="mb-2">
+               <label for="files" class="form-label">Submit files (.txt, .pdf, .jpg)</label>
+               <input class="form-control" id="files" type="file" name="files" accept=".txt, .pdf, .jpg" multiple>
+           </div>
+           {% if user.is_authenticated %}
+            <div class="mb-2">
+                <label class="mb-1" for="receive_emails">Would you like to receive email updates?</label>
+                <select class="form-select" id="receive_emails" name="receive_emails">
+                    <option value="receive none">Do Not Send</option>
+                    <option value="receive all">Send After All Updates</option>
+                    <option value="receive some">Send Once Resolved</option>
+                </select>
+            </div>
+           {% endif %}
+           <div class="d-flex">
+               <button type="submit" class="btn btn-primary btn-submit w-100">Submit</button>
+           </div>
+       </form>
+    </div>
+    </div>
+    </div>
+</body>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        const locationSelect = document.getElementById('location'); 
+        const customLocation = document.getElementById('custom_location');
+        
+        locationSelect.addEventListener('change', function() {
+            customLocation.style.display = this.value === "Other" ? 'block' : 'none';
+        });
+
+        const form = document.querySelector('form[name="report_form"]');
+        const fileInput = document.getElementById('files');
+
+        form.addEventListener('submit', function(event) {
+            const allowed = ['text/plain', 'application/pdf', 'image/jpeg'];
+            for (let file = 0; file < fileInput.files.length; file++) {
+                if (!allowed.includes(fileInput.files[file].type)) {
+                    event.preventDefault();
+                    alert('Only .txt, .pdf, and .jpg files are supported');
+                }
+            }
+        });
+    });
+    </script>
+
+{% endblock scripts %}

@@ -1,0 +1,22 @@
+{% extends 'components/base.html' %}
+{% load i18n %}
+{% load allauth %}
+{% block head_title %}
+    {% trans "Sign In" %}
+{% endblock head_title %}
+{% block content %}
+<div class="d-flex h-100 w-100 align-items-center" style="margin-top: 5rem;">
+    <div>
+        <h1>{% blocktrans with provider.name as provider %}Connect to {{ provider }}{% endblocktrans %}</h1>
+        <p>
+            {% blocktrans with provider.name as provider %}You are about to connect a new third-party account from {{ provider }}.{% endblocktrans %}
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-primary" type="submit">{% trans "Continue" %}</button>
+        </form>
+        
+    </div>
+
+</div>
+{% endblock content %}
